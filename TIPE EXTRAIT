@@ -1,0 +1,216 @@
+
+from numpy import*
+from random import*
+from matplotlib.pyplot import*
+
+def grille(n):       créer sa matrice n sur n 
+        M=[]
+        for i in range (n):
+                L=[]
+                for j in range (n):
+                        L.append(0)
+                M.append(L)
+        return M
+
+
+def init(n):                 prendre une personne random et on la passe en 1 ( infecte)
+        G=grille(n)
+        i=randrange(n)
+        j=randrange(n)
+        G[i][j]=1
+        return G
+
+
+# nCompte[0] = sain
+# nCompte[1] = infecté
+# nCompte[2] = rétabli
+# nCompte[3] = mort
+
+def compte (G):                   ( compte le nombre de personne de chaque catégorie)
+        n=len(G)
+        nCompte=[0,0,0,0]
+        for i in range (n):
+                for j in range (n):
+                        nCompte[G[i][j]]+=1
+        return nCompte
+
+
+def est_exposee(G, i, j):
+       n = len(G)
+       if i == 0 and j == 0:
+                     return (G[0][1]-1)*(G[1][1]-1)*(G[1][0]-1) == 0
+       elif i == 0 and j == n-1:
+                     return (G[0][n-2]-1)*(G[1][n-2]-1)*(G[1][n-1]-1) == 0
+       elif i == n-1 and j == 0:
+                     return (G[n-1][1]-1)*(G[n-2][1]-1)*(G[n-2][0]-1) == 0
+       elif i == n-1 and j == n-1:
+                     return (G[n-1][n-2]-1)*(G[n-2][n-2]-1)*(G[n-2][n-1]-1) == 0
+       elif i == 0:
+                     return (G[0][j-1]-1)*(G[0][j+1]-1)*(G[1][j-1]-1)*(G[1][j]-1)*(G[1][j+1]-1)==0
+       elif i == n-1:
+                     return (G[n-1][j-1]-1)*(G[n-2][j-1]-1)*(G[n-2][j]-1)*(G[n-2][j+1]-1)*(G[n-1][j+1]-1) == 0
+       elif j == 0:
+                     return (G[i-1][0]-1)*(G[i-1][1]-1)*(G[i][1]-1)*(G[i+1][1]-1)*(G[i+1][0]-1) == 0
+       elif j == n-1:
+                     return (G[i-1][n-1]-1)*(G[i-1][n-2]-1)*(G[i][n-2]-1)*(G[i+1][n-2]-1)*(G[i+1][n-1]-1) == 0
+       else:
+                     return (G[i-1][j-1]-1)*(G[i-1][j]-1)*(G[i-1][j+1]-1)*(G[i][j-1]-1)*(G[i][j+1]-1)*(G[i+1][j-1]-1)*(G[i+1][j]-1)*(G[i+1][j+1]-1)==0
+
+
+def bernouilli(p):
+       x = random()
+       if x <= p:
+              return 1
+       else:
+              return 0 
+
+
+#  p1 = chance de mourir
+#  p2 = chance d'infecter
+
+def suivant (G, p1, p2):      ( itération de contamination en plus , soit le mec il infecte soit il infecte pas)
+        n=len(G)
+        H=grille(n)
+        for i in range(n):
+                for j in range(n):
+                        if G[i][j]==0 and est_exposee (G, i, j) and bernouilli(p2)==1:
+                                H[i][j]=1
+                        elif G[i][j]==1:
+                                if bernouilli(p1)==1:
+                                        H[i][j]=3
+                                else:
+                                        H[i][j]=2
+                        elif G[i][j]==2 or G[i][j]==3:
+                                H[i][j]=G[i][j]
+        return H
+
+
+def simulation (n, p1, p2):
+        G=init(n)
+        H=suivant (G,p1,p2)
+        while G!=H:
+                G=H
+                H=suivant(G,p1,p2)
+        resu=compte(H)
+        return [resu[i]/n**2 for i in range(4)]
+
+bdhbfhd
+
+
+def simu_courbe (n, p1, p2):         ( on créer notre grille initialisé , 
+        G=init(n)
+        resu=[]
+        resu.append(compte(G))
+        H=suivant (G, p1, p2)
+        resu.append(compte(H))
+        while G!=H:
+                G=H
+                resu.append(compte(G))
+                H=suivant (G,p1,p2)
+        resu.append(compte(H))
+        x=linspace(0,1, len(resu))
+        S=[resu[i][0] for i in range(len(resu))]
+        I=[resu[i][1] for i in range(len(resu))]
+        R=[resu[i][2] for i in range(len(resu))]
+        D=[resu[i][3] for i in range(len(resu))]
+        plot(x,S, label="Sains")
+        plot(x,I, label="Infectes")
+        plot(x,R, label="Retablis")
+        plot(x,D, label="Morts")
+        legend()
+        show()
+
+
+
+def simulationtest (n, p1, p2):
+        G=init(n)
+        H=suivant (G,p1,p2)
+        while G!=H:
+                G=H
+                H=suivant(G,p1,p2)
+        return H
+
+
+
+def grille_coloree(n,p1,p2):
+    L=simulationtest(n,p1,p2)
+    n=len(L)
+    fig, ax = subplots()
+    for i in range(n+1):
+            ax.plot([0,n],[i,i],'w')
+            ax.plot([i,i],[0,n],'w')
+    for j in range(len(L)):
+        for i in range(len(L[j])):
+            if L[j][i]==0:
+                ax.add_patch(
+                Rectangle((i,j),1,1,
+                facecolor = 'ivory'))
+            if L[j][i]==1:
+                ax.add_patch(
+                Rectangle((i,j),1,1,
+                facecolor = 'red'))
+            if L[j][i]==2:
+                ax.add_patch(
+                Rectangle((i,j),1,1,
+                facecolor = 'turquoise'))
+            if L[j][i]==3:
+                ax.add_patch(
+                Rectangle((i,j),1,1,
+                facecolor = 'black'))
+    axis("equal")
+    axis("off")#repère orthonormé
+    show()
+
+
+
+
+
+
+
+
+
+def evolution(n, p1, p2):
+        G=init(n)
+        grille_evolution(G)
+        H=suivant (G,p1,p2)
+        i=1
+        while G!=H:
+                G=H
+                H=suivant(G,p1,p2)
+                i+=1
+                if i%30==0:
+                        grille_evolution(H)
+        return grille_evolution(H)
+
+
+
+
+def grille_evolution(L):
+    n=len(L)
+    fig, ax = subplots()
+    for i in range(n+1):
+            ax.plot([0,n],[i,i],'w')
+            ax.plot([i,i],[0,n],'w')
+    for j in range(len(L)):
+        for i in range(len(L[j])):
+            if L[j][i]==0:
+                ax.add_patch(
+                Rectangle((i,j),1,1,
+                facecolor = 'ivory'))
+            if L[j][i]==1:
+                ax.add_patch(
+                Rectangle((i,j),1,1,
+                facecolor = 'red'))
+            if L[j][i]==2:
+                ax.add_patch(
+                Rectangle((i,j),1,1,
+                facecolor = 'turquoise'))
+            if L[j][i]==3:
+                ax.add_patch(
+                Rectangle((i,j),1,1,
+                facecolor = 'black'))
+    axis("equal")
+    axis("off")#repère orthonormé
+    show()
+
+
